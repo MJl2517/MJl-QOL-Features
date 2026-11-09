@@ -12,6 +12,7 @@
   inset: auto;
   top: anchor(top);
   left: calc(anchor(right) + 8px);
+  position-try-fallbacks: flip-block;
   width: min(18rem, 70vw);
   max-height: min(28rem, 70dvh);
   margin: 0;

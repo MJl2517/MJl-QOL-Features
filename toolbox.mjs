@@ -3,7 +3,6 @@ const QOL_ID = "mjl-ilmaren-combat";
 const SETTING = "storedButtons";
 const TITLE = "Склад инструментов";
 const CONFIGURE = "Настройка отображения";
-const LAYERS = "Разделы панели";
 
 const key = (control, tool = null) => JSON.stringify([control, tool]);
 const enabled = () => game.settings.get(QOL_ID, "toolbox") && !game.modules.get(ID)?.active;
@@ -32,20 +31,15 @@ function button(label, icon) {
 }
 
 function categories(app) {
-  const controls = sorted(app.controls);
   const localize = title => game.i18n.localize(title);
-  return [
-    {title: LAYERS, entries: controls.map(control => ({
-      id: key(control.name), control: control.name, label: localize(control.title), icon: control.icon
-    }))},
-    ...controls.map(control => ({
-      title: localize(control.title),
-      entries: sorted(control.tools).map(tool => ({
-        id: key(control.name, tool.name), control: control.name, tool: tool.name,
-        label: localize(tool.title), icon: tool.icon
-      }))
+  return sorted(app.controls).map(control => ({
+    title: localize(control.title),
+    layer: {id: key(control.name), control: control.name, icon: control.icon},
+    tools: sorted(control.tools).map(tool => ({
+      id: key(control.name, tool.name), control: control.name, tool: tool.name,
+      label: localize(tool.title), icon: tool.icon
     }))
-  ];
+  }));
 }
 
 function section(title, count) {
@@ -59,11 +53,11 @@ async function configure(app) {
   const content = element("div");
   const list = element("div");
   list.className = "mjl-toolbox-config";
-  content.append(element("p", "Отметьте кнопки для переноса в склад. Чтобы вернуть кнопку на панель, снимите отметку."), list);
+  content.append(element("p", "Перенесите в склад весь раздел или отдельные инструменты. Снимите отметку, чтобы вернуть их на панель."), list);
 
-  for (const {title, entries} of categories(app)) {
-    if (!entries.length) continue;
-    const group = section(title, entries.length);
+  for (const {title, layer, tools} of categories(app)) {
+    const entries = [{...layer, label: "Перенести весь раздел"}, ...tools];
+    const group = section(title, tools.length);
     group.open = entries.some(entry => selection.has(entry.id));
     for (const entry of entries) {
       const label = element("label");
@@ -126,8 +120,10 @@ function fill(app, panel, trigger) {
   panel.replaceChildren(configureButton);
 
   const selection = stored();
-  for (const {title, entries} of categories(app)) {
-    const available = entries.filter(entry => selection.has(entry.id));
+  for (const {title, layer, tools} of categories(app)) {
+    const available = selection.has(layer.id)
+      ? [{...layer, label: "Открыть раздел"}, ...tools]
+      : tools.filter(tool => selection.has(tool.id));
     if (!available.length) continue;
     const group = section(title, available.length);
     for (const entry of available) {
@@ -150,8 +146,9 @@ function sync(app, html) {
   if (!layers) return;
   const selection = stored();
   for (const node of html.querySelectorAll("button.layer[data-control], button.tool[data-tool]")) {
-    const id = node.dataset.tool ? key(app.control?.name, node.dataset.tool) : key(node.dataset.control);
-    node.closest("li")?.classList.toggle("mjl-toolbox-stored", selection.has(id));
+    const control = node.dataset.control ?? app.control?.name;
+    const hidden = selection.has(key(control)) || selection.has(key(control, node.dataset.tool));
+    node.closest("li")?.classList.toggle("mjl-toolbox-stored", hidden);
   }
 
   if (layers.querySelector(`#${ID}-trigger`)) return;
@@ -173,7 +170,7 @@ function sync(app, html) {
     if (event.newState === "open") fill(app, panel, trigger);
   });
   row.append(trigger);
-  layers.prepend(row);
+  layers.append(row);
   html.append(panel);
 }
 
