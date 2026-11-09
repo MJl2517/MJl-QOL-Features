@@ -82,13 +82,20 @@ Hooks.on("deleteCombat", combat => {
   const rows = [...totals.values()]
     .sort((a, b) => a.name.localeCompare(b.name, "ru") || a.ammo.localeCompare(b.ammo, "ru"))
     .map(({ name, ammo, spent }) =>
-      `<tr><td>${escape(name)}</td><td>${escape(ammo)}</td><td>${spent}</td><td>${Math.floor(spent / 2)}</td></tr>`)
+      `<li>
+        <div class="mjl-ammo-item"><strong>${escape(ammo)}</strong><span>${escape(name)}</span></div>
+        <dl class="mjl-ammo-counts">
+          <div><dt>Потрачено</dt><dd>${spent}</dd></div>
+          <div><dt>К возврату</dt><dd>${Math.floor(spent / 2)}</dd></div>
+        </dl>
+      </li>`)
     .join("");
-  const content = `<h3>Боеприпасы после боя</h3>` + (rows
-    ? `<p>За минуту сбора можно вернуть половину потраченных боеприпасов каждого вида (с округлением вниз).</p>
-       <table><thead><tr><th>Персонаж</th><th>Боеприпасы</th><th>Потрачено</th><th>К возврату</th></tr></thead>
-       <tbody>${rows}</tbody></table>`
-    : "<p>Боеприпасы не расходовались.</p>");
+  const content = `<section class="mjl-ammo-report">
+    <h3><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Боеприпасы после боя</h3>
+    ${rows
+      ? `<ul class="mjl-ammo-list">${rows}</ul><p>1 минута сбора · половина от каждого вида, округляя вниз.</p>`
+      : "<p>Боеприпасы не расходовались.</p>"}
+  </section>`;
   foundry.documents.ChatMessage.create({ speaker: { alias: "Боевой отчёт" }, content })
     .catch(error => console.error(ID, error));
 });

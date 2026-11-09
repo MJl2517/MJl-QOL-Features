@@ -2,16 +2,17 @@
   "id": "mjl-ilmaren-combat",
   "title": "MJl QOL Features",
   "description": "Уборка областей заклинаний из чата, состояние «Без сознания» по хитам и учёт боеприпасов в бою.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "authors": [{"name": "MJl tools"}],
   "compatibility": {"minimum": "14.361", "verified": "14.361", "maximum": "14"},
   "relationships": {"systems": [{"id": "dnd5e", "type": "system", "compatibility": {"minimum": "5.3.3", "maximum": "5.3.999"}}]},
   "esmodules": ["combat.mjs", "ammo.mjs"],
+  "styles": ["ammo.css"],
   "languages": [
     {"lang": "en", "name": "English", "path": "lang/en.json"},
     {"lang": "ru", "name": "Русский", "path": "lang/ru.json"}
   ],
   "url": "https://github.com/MJl2517/MJl-QOL-Features",
   "manifest": "https://raw.githubusercontent.com/MJl2517/MJl-QOL-Features/main/module.json",
-  "download": "https://github.com/MJl2517/MJl-QOL-Features/releases/download/v1.2.0/module.zip"
+  "download": "https://github.com/MJl2517/MJl-QOL-Features/releases/download/v1.2.1/module.zip"
 }
