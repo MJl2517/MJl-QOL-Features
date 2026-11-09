@@ -66,6 +66,10 @@
   margin: 0;
 }
 
+.mjl-ammo-counts > div:only-child {
+  grid-column: 1 / -1;
+}
+
 .mjl-ammo-counts dt {
   font-size: 0.85em;
   font-weight: 400;

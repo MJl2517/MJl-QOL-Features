@@ -13,6 +13,10 @@ function isAmmo(item) {
   return item?.type === "consumable" && item.system.type?.value === "ammo";
 }
 
+function isThrownWeapon(item) {
+  return item?.type === "weapon" && item.system.properties.has("thr");
+}
+
 Hooks.on("dnd5e.postAttackRollConfiguration", (rolls, { subject }) => {
   const weapon = subject?.item;
   if (game.user.isGM || !rolls.length || weapon?.type !== "weapon" || !weapon.system.properties.has("amm")) return;
@@ -25,11 +29,13 @@ Hooks.on("dnd5e.postAttackRollConfiguration", (rolls, { subject }) => {
 
 // The system announces the shot before consuming ammo. Carry its combat ID on the actual
 // document operation so the GM can count successful changes made by any player.
-Hooks.on("dnd5e.rollAttack", (_rolls, { subject, ammoUpdate }) => {
+Hooks.on("dnd5e.rollAttack", (rolls, { subject, ammoUpdate }) => {
   if (!enabled()) return;
   const actor = subject?.actor;
   const item = actor?.items.get(ammoUpdate?.id);
-  if (!isAmmo(item) || !subject.item.isOwner || item.system.quantity < 1) return;
+  const thrown = isThrownWeapon(item) && item.id === subject.item.id
+    && rolls[0]?.options.attackMode?.startsWith("thrown");
+  if (!(isAmmo(item) || thrown) || !subject.item.isOwner || item.system.quantity < 1) return;
   const combat = game.combats.find(c => c.isActive && participant(c, actor));
   if (combat) expected.set(item, {
     combatId: combat.id, quantity: ammoUpdate.quantity, destroy: !!ammoUpdate.destroy, expires: Date.now() + 10000
@@ -53,14 +59,15 @@ Hooks.on("preDeleteItem", (item, options) => {
 });
 
 function record(item, options) {
-  if (!game.user.isActiveGM || !enabled() || !isAmmo(item)) return;
+  if (!game.user.isActiveGM || !enabled() || !(isAmmo(item) || isThrownWeapon(item))) return;
   const combat = game.combats.get(options[ID]?.[item.id]);
   const actor = item.actor;
   if (!participant(combat, actor)) return;
   const id = foundry.utils.randomID();
   const shot = {
     actor: actor.uuid, name: actor.name, ammo: item.name, subtype: item.system.type.subtype ?? "",
-    magical: item.system.properties.has("mgc")
+    magical: isAmmo(item) && item.system.properties.has("mgc"),
+    thrown: isThrownWeapon(item)
   };
   if (!pending.has(combat.id)) pending.set(combat.id, new Map());
   const shots = pending.get(combat.id);
@@ -86,29 +93,33 @@ Hooks.on("deleteCombat", combat => {
     ...Object.fromEntries(pending.get(combat.id) ?? []) };
   pending.delete(combat.id);
   const totals = new Map();
-  const hasMagic = Object.values(shots).some(shot => shot.magical);
-  for (const shot of Object.values(shots)) {
-    const key = JSON.stringify([shot.actor, shot.subtype, shot.ammo]);
+  const entries = Object.values(shots);
+  const hasMagic = entries.some(shot => shot.magical);
+  const hasThrown = entries.some(shot => shot.thrown);
+  for (const shot of entries) {
+    const key = JSON.stringify([shot.actor, shot.thrown === true, shot.subtype, shot.ammo]);
     if (!totals.has(key)) totals.set(key, { ...shot, spent: 0 });
     totals.get(key).spent++;
   }
   const escape = foundry.utils.escapeHTML;
   const rows = [...totals.values()]
     .sort((a, b) => a.name.localeCompare(b.name, "ru") || a.ammo.localeCompare(b.ammo, "ru"))
-    .map(({ name, ammo, spent }) =>
+    .map(({ name, ammo, spent, thrown }) =>
       `<li>
         <div class="mjl-ammo-item"><strong>${escape(ammo)}</strong><span>${escape(name)}</span></div>
         <dl class="mjl-ammo-counts">
-          <div><dt>Потрачено</dt><dd>${spent}</dd></div>
-          <div><dt>К возврату</dt><dd>${Math.floor(spent / 2)}</dd></div>
+          <div><dt>${thrown ? "Брошено" : "Потрачено"}</dt><dd>${spent}</dd></div>
+          ${thrown ? "" : `<div><dt>К возврату</dt><dd>${Math.floor(spent / 2)}</dd></div>`}
         </dl>
       </li>`)
     .join("");
   const content = `<section class="mjl-ammo-report">
-    <h3><i class="fa-solid fa-bullseye" aria-hidden="true"></i> Боеприпасы после боя</h3>
+    <h3><i class="fa-solid fa-bullseye" aria-hidden="true"></i> ${hasThrown ? "Боеприпасы и метательное оружие" : "Боеприпасы после боя"}</h3>
     ${rows
-      ? `<ul class="mjl-ammo-list">${rows}</ul><p>1 минута сбора · половина от каждого вида, округляя вниз.</p>`
+      ? `<ul class="mjl-ammo-list">${rows}</ul>`
       : "<p>Боеприпасы не расходовались.</p>"}
+    ${entries.some(shot => !shot.thrown) ? "<p>1 минута сбора · половина боеприпасов каждого вида, округляя вниз.</p>" : ""}
+    ${hasThrown ? "<p>Брошенное оружие подбирается вручную, если его удалось найти.</p>" : ""}
     ${hasMagic ? "<p>Снаряды +1/+2/+3 после попадания подбираются как обычные. При промахе найденный снаряд сохраняет бонус.</p>" : ""}
   </section>`;
   foundry.documents.ChatMessage.create({ speaker: { alias: "Боевой отчёт" }, content })

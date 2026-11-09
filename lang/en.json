@@ -9,8 +9,12 @@
       "hint": "Applies the condition at 0 HP and removes the module's effect when at least 1 HP is restored."
     },
     "combatAmmo": {
-      "name": "Track combat ammunition",
-      "hint": "Reports ammunition spent and recoverable after combat. While the standalone ammunition module is active, it handles tracking."
+      "name": "Track ammunition and thrown weapons",
+      "hint": "Reports ammunition spent and weapons thrown after combat. While the standalone ammunition module is active, it handles tracking."
+    },
+    "toolbox": {
+      "name": "Scene Toolbox",
+      "hint": "Adds a toolbox to the scene toolbar. Each user chooses which controls to move into it."
     },
     "RemoveArea": "Remove Area",
     "RemoveAreaError": "Could not remove the spell area.",

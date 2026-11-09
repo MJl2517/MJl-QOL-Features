@@ -3,7 +3,7 @@ const pending = new Map();
 const report = error => console.error(ID, error);
 
 Hooks.once("init", () => {
-  for (const key of ["removeSpellAreas", "unconsciousAtZeroHP", "combatAmmo"]) {
+  for (const key of ["removeSpellAreas", "unconsciousAtZeroHP", "combatAmmo", "toolbox"]) {
     game.settings.register(ID, key, {
       name: `MJLQOL.${key}.name`,
       hint: `MJLQOL.${key}.hint`,
