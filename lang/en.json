@@ -8,6 +8,10 @@
       "name": "Unconscious at 0 HP",
       "hint": "Applies the condition at 0 HP and removes the module's effect when at least 1 HP is restored."
     },
+    "combatAmmo": {
+      "name": "Track combat ammunition",
+      "hint": "Reports ammunition spent and recoverable after combat. While the standalone ammunition module is active, it handles tracking."
+    },
     "RemoveArea": "Remove Area",
     "RemoveAreaError": "Could not remove the spell area."
   }

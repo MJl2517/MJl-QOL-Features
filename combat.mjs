@@ -3,7 +3,7 @@ const pending = new Map();
 const report = error => console.error(ID, error);
 
 Hooks.once("init", () => {
-  for (const key of ["removeSpellAreas", "unconsciousAtZeroHP"]) {
+  for (const key of ["removeSpellAreas", "unconsciousAtZeroHP", "combatAmmo"]) {
     game.settings.register(ID, key, {
       name: `MJLQOL.${key}.name`,
       hint: `MJLQOL.${key}.hint`,
@@ -48,13 +48,33 @@ function deletableAreas(message) {
 Hooks.on("dnd5e.renderChatMessage", (message, html) => {
   if (!game.settings.get(ID, "removeSpellAreas") || !message.isContentVisible) return;
   const cast = message.getOriginatingMessage();
+  if (cast !== message && message.getFlag("dnd5e", "roll.type") !== "damage") return;
+  if (cast.getFlag("dnd5e", "item.type") !== "spell") return;
   if (!cast.isContentVisible || !deletableAreas(cast).length) return;
-  const host = html.querySelector(".card-buttons") ?? html.querySelector(".message-content");
-  if (!host || host.querySelector("[data-mjl-remove-area]")) return;
+  const content = html.querySelector(".message-content");
+  if (!content || content.querySelector("[data-mjl-remove-area]")) return;
+  let host = content.querySelector(".chat-card .card-buttons");
+  if (!host) {
+    let card = content.querySelector(".chat-card");
+    if (!card) {
+      card = document.createElement("div");
+      card.className = "chat-card";
+      content.append(card);
+    }
+    host = document.createElement("div");
+    host.className = "card-buttons";
+    card.append(host);
+  }
   const button = document.createElement("button");
   button.type = "button";
   button.dataset.mjlRemoveArea = cast.id;
-  button.textContent = game.i18n.localize("MJLQOL.RemoveArea");
+  const icon = document.createElement("i");
+  icon.className = "fa-solid fa-eraser";
+  icon.setAttribute("inert", "");
+  icon.setAttribute("aria-hidden", "true");
+  const label = document.createElement("span");
+  label.textContent = game.i18n.localize("MJLQOL.RemoveArea");
+  button.append(icon, label);
   button.addEventListener("click", async () => {
     if (!game.settings.get(ID, "removeSpellAreas")) return button.remove();
     button.disabled = true;
@@ -92,9 +112,10 @@ async function syncUnconscious(actor) {
     if (ids.length) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
   } else if (shouldFall(actor)) {
     const effect = await ActiveEffect.implementation.fromStatusEffect("unconscious", { parent: actor });
-    if (!game.settings.get(ID, "unconsciousAtZeroHP") || !shouldFall(actor)) return;
+    if (!game.settings.get(ID, "unconsciousAtZeroHP") || !shouldFall(actor) || actor.effects.has(effect.id)) return;
     effect.updateSource({ [`flags.${ID}.fromZeroHP`]: true });
-    await actor.createEmbeddedDocuments("ActiveEffect", [effect.toObject()]);
+    // DAE uses the native status ID when reconciling conditions and their dependencies.
+    await actor.createEmbeddedDocuments("ActiveEffect", [effect.toObject()], { keepId: true });
   }
 }
 
