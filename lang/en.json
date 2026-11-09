@@ -1,0 +1,14 @@
+{
+  "MJLQOL": {
+    "removeSpellAreas": {
+      "name": "Remove spell areas from chat",
+      "hint": "Adds a Remove Area button to the spell card and its linked damage card."
+    },
+    "unconsciousAtZeroHP": {
+      "name": "Unconscious at 0 HP",
+      "hint": "Applies the condition at 0 HP and removes the module's effect when at least 1 HP is restored."
+    },
+    "RemoveArea": "Remove Area",
+    "RemoveAreaError": "Could not remove the spell area."
+  }
+}
