@@ -13,6 +13,8 @@
       "hint": "Reports ammunition spent and recoverable after combat. While the standalone ammunition module is active, it handles tracking."
     },
     "RemoveArea": "Remove Area",
-    "RemoveAreaError": "Could not remove the spell area."
+    "RemoveAreaError": "Could not remove the spell area.",
+    "AmmoSelect": "Select available ammunition before firing.",
+    "AmmoEmpty": "This weapon is out of compatible ammunition."
   }
 }

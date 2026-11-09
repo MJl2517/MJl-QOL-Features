@@ -13,6 +13,16 @@ function isAmmo(item) {
   return item?.type === "consumable" && item.system.type?.value === "ammo";
 }
 
+Hooks.on("dnd5e.postAttackRollConfiguration", (rolls, { subject }) => {
+  const weapon = subject?.item;
+  if (game.user.isGM || !rolls.length || weapon?.type !== "weapon" || !weapon.system.properties.has("amm")) return;
+  const selected = rolls[0].options.ammunition;
+  const available = weapon.system.ammunitionOptions.filter(option => option.item.system.quantity > 0);
+  if (available.some(option => option.value === selected)) return;
+  ui.notifications.warn(available.length ? "MJLQOL.AmmoSelect" : "MJLQOL.AmmoEmpty", { localize: true });
+  return false;
+});
+
 // The system announces the shot before consuming ammo. Carry its combat ID on the actual
 // document operation so the GM can count successful changes made by any player.
 Hooks.on("dnd5e.rollAttack", (_rolls, { subject, ammoUpdate }) => {
@@ -48,7 +58,10 @@ function record(item, options) {
   const actor = item.actor;
   if (!participant(combat, actor)) return;
   const id = foundry.utils.randomID();
-  const shot = { actor: actor.uuid, name: actor.name, ammo: item.name, subtype: item.system.type.subtype ?? "" };
+  const shot = {
+    actor: actor.uuid, name: actor.name, ammo: item.name, subtype: item.system.type.subtype ?? "",
+    magical: item.system.properties.has("mgc")
+  };
   if (!pending.has(combat.id)) pending.set(combat.id, new Map());
   const shots = pending.get(combat.id);
   shots.set(id, shot);
@@ -73,6 +86,7 @@ Hooks.on("deleteCombat", combat => {
     ...Object.fromEntries(pending.get(combat.id) ?? []) };
   pending.delete(combat.id);
   const totals = new Map();
+  const hasMagic = Object.values(shots).some(shot => shot.magical);
   for (const shot of Object.values(shots)) {
     const key = JSON.stringify([shot.actor, shot.subtype, shot.ammo]);
     if (!totals.has(key)) totals.set(key, { ...shot, spent: 0 });
@@ -95,6 +109,7 @@ Hooks.on("deleteCombat", combat => {
     ${rows
       ? `<ul class="mjl-ammo-list">${rows}</ul><p>1 минута сбора · половина от каждого вида, округляя вниз.</p>`
       : "<p>Боеприпасы не расходовались.</p>"}
+    ${hasMagic ? "<p>Снаряды +1/+2/+3 после попадания подбираются как обычные. При промахе найденный снаряд сохраняет бонус.</p>" : ""}
   </section>`;
   foundry.documents.ChatMessage.create({ speaker: { alias: "Боевой отчёт" }, content })
     .catch(error => console.error(ID, error));
