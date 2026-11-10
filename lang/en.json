@@ -1,5 +1,23 @@
 {
   "MJLQOL": {
+    "WorldCopy": {
+      "Title": "Copy World",
+      "Hint": "Prepares a command to copy the current world on the Foundry host.",
+      "Intro": "Enter a name and ID for the new world. If Foundry uses a custom data location, enter the folder containing Data and Config.",
+      "Name": "Copy name",
+      "Id": "Copy ID",
+      "Path": "Foundry User Data folder",
+      "Suffix": "copy",
+      "Prepare": "Prepare Copy",
+      "Cancel": "Cancel",
+      "Invalid": "Enter a title and a new ID using lowercase letters, digits, hyphens, or underscores.",
+      "Run": "Fully stop the Foundry server, then run this command in PowerShell on the host with Node.js installed. Start Foundry afterward and select the copy from the world list.",
+      "Command": "PowerShell command",
+      "Copy": "Copy Command",
+      "Close": "Close",
+      "Copied": "Command copied.",
+      "ManualCopy": "Select and copy the command manually."
+    },
     "removeSpellAreas": {
       "name": "Remove spell areas from chat",
       "hint": "Adds a Remove Area button to the spell card and its linked damage card."
